@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import com.sun.mail.imap.IMAPInputStream;
 
 /**
  * An {@link EntityProcessor} instance which can index emails along with their attachments from POP3 or IMAP sources. Refer to
@@ -112,11 +113,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
       mail = getNextMail();
       if (mail != null)
         row = getDocumentFromMail(mail);
-    } while (row == null && mail != null);    
+    } while (row == null && mail != null);  
+    LOG.info("EXTRA: Return valied row");  
     return row;
   }
 
   private Message getNextMail() {
+    LOG.info("EXTRA: Getting Next Mail");
     if (!connected) {
       if (!connectToMailBox())
         return null;
@@ -136,6 +139,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       }
       msgIter = new MessageIterator(next, batchSize);
     }
+    LOG.info("EXTRA: Returning message");
     return msgIter.next();
   }
 
@@ -145,6 +149,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
       addPartToDocument(mail, row, true);
       return row;
     } catch (Exception e) {
+      LOG.info("EXTRA: EMAIL Exception"+e.getMessage());
+      e.printStackTrace();
       return null;
     }
   }
@@ -156,13 +162,29 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
     String ct = part.getContentType();
     ContentType ctype = new ContentType(ct);
+    
     if (part.isMimeType("multipart/*")) {
-      Multipart mp = (Multipart) part.getContent();
-      int count = mp.getCount();
-      if (part.isMimeType("multipart/alternative"))
-        count = 1;
-      for (int i = 0; i < count; i++)
-        addPartToDocument(mp.getBodyPart(i), row, false);
+      LOG.info("EXTRA: ContentType"+part.getContentType());
+      try{
+        Multipart mp = (Multipart) part.getContent();
+        int count = mp.getCount();
+        if (part.isMimeType("multipart/alternative"))
+          count = 1;
+        for (int i = 0; i < count; i++)
+          addPartToDocument(mp.getBodyPart(i), row, false);
+      }
+      catch(ClassCastException exp)
+      {
+        //The message is passed as an attachment NOT a multipart -- something has gone wrong but we can do this!
+
+        InputStream is = part.getInputStream();
+        Metadata md = new Metadata();
+        String content = tika.parseToString(is, md);
+        List<String> contents = new ArrayList<String>();
+        contents.add(content);
+        row.put(CONTENT, contents);
+
+      } 
     } else if (part.isMimeType("message/rfc822")) {
       addPartToDocument((Part) part.getContent(), row, false);
     } else {
@@ -424,6 +446,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
     public MessageIterator(Folder folder, int batchSize) {
       try {
+        LOG.info("EXTRA: Create MI");
         this.folder = folder;
         this.batchSize = batchSize;
         SearchTerm st = getSearchTerm();
