@@ -177,9 +177,10 @@ public class MailEntityProcessor extends EntityProcessorBase {
       {
         //The message is passed as an attachment NOT a multipart -- something has gone wrong but we can do this!
 
+        SimpleHTMLMailParser shtmlmp = new SimpleHTMLMailParser();
         InputStream is = part.getInputStream();
         Metadata md = new Metadata();
-        String content = tika.parseToString(is, md);
+        String content = tika.parseToString(shtmlmp.processInputStream(is), md);
         List<String> contents = new ArrayList<String>();
         contents.add(content);
         row.put(CONTENT, contents);
@@ -234,6 +235,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       row.put(TO_CC_BCC, to);
 
     row.put(MESSAGE_ID, mail.getMessageID());
+    row.put(ID,mail.getMessageID());
     row.put(SUBJECT, mail.getSubject());
 
     Date d = mail.getSentDate();
@@ -589,6 +591,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   // Fields To Index
   // single valued
   private static final String MESSAGE_ID = "messageId";
+  private static final String ID = "id";
   private static final String SUBJECT = "subject";
   private static final String FROM = "from";
   private static final String SENT_DATE = "sentDate";
