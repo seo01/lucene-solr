@@ -1070,6 +1070,8 @@ public class SimplePostTool {
     }
     
     public boolean isDisallowedByRobots(URL url) {
+      return false;
+      /*
       String host = url.getHost();
       String strRobot = url.getProtocol() + "://" + host + "/robots.txt";
       List<String> disallows = robotsCache.get(host);
@@ -1084,6 +1086,7 @@ public class SimplePostTool {
         } catch (IOException e) {
           // There is no robots.txt, will cache an empty disallow list
         }
+        
       }
       
       robotsCache.put(host, disallows);
@@ -1094,6 +1097,7 @@ public class SimplePostTool {
           return true;
       }
       return false;
+      */
     }
 
     /**
