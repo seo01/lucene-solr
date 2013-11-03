@@ -17,7 +17,11 @@ public class SimpleHTMLMailParser
 		String str = null;
 		try{
 			String boundary = br.readLine();
-			str = processContent(br,boundary);
+			System.out.println(boundary);
+			if(boundary.startsWith("--"))
+				str = processContent(br,boundary);
+			else //this is not a multipart
+				str = processSimpleContent(boundary,br);
 		}
 		catch(IOException exp)
 		{
@@ -34,6 +38,19 @@ public class SimpleHTMLMailParser
 		return outIs;
 	}
 
+	public String processSimpleContent(String head, BufferedReader br) throws IOException
+	{
+		String line;
+		StringBuilder outStr = new StringBuilder();
+		if(head != null)
+			outStr.append(head);
+		while ((line = br.readLine()) != null)
+		{	
+			outStr.append(line);
+		}
+		return outStr.toString();
+	}
+
 	public String processContent(BufferedReader br, String boundary) throws IOException
 	{
 		String line;
@@ -41,7 +58,11 @@ public class SimpleHTMLMailParser
 		while(true)
 		{
 			String contentTypeLine = br.readLine();
-			if(contentTypeLine.contains("text/html"))
+			if(contentTypeLine == null)
+			{
+				return null;//nothing to report
+			}
+			else if(contentTypeLine.contains("text/plain"))
 			{
 				//consume lines until you hit an empty line
 				while ((line = br.readLine()) != null) {
