@@ -155,6 +155,17 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  public void addToPartToDocumentWithSimpleHTMLParser(Part part, Map<String, Object> row) throws Exception
+  {
+    SimpleHTMLMailParser shtmlmp = new SimpleHTMLMailParser();
+        InputStream is = part.getInputStream();
+        Metadata md = new Metadata();
+        String content = tika.parseToString(shtmlmp.processInputStream(is), md);
+        List<String> contents = new ArrayList<String>();
+        contents.add(content);
+        row.put(CONTENT, contents);
+  }
+
   public void addPartToDocument(Part part, Map<String, Object> row, boolean outerMost) throws Exception {
     if (part instanceof Message) {
       addEnvelopToDocument(part, row);
@@ -162,9 +173,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
 
     String ct = part.getContentType();
     ContentType ctype = new ContentType(ct);
-    
-    if (part.isMimeType("multipart/*")) {
-      LOG.info("EXTRA: ContentType"+part.getContentType());
+    if(part.isMimeType("text/plain"))
+    {
+      LOG.info("EXTRA: Parsing plain text");
+      addToPartToDocumentWithSimpleHTMLParser(part,row);
+    }
+    else if (part.isMimeType("multipart/*")) {
+      LOG.info("EXTRA: ContentType "+part.getContentType());
       try{
         Multipart mp = (Multipart) part.getContent();
         int count = mp.getCount();
@@ -176,7 +191,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       catch(ClassCastException exp)
       {
         //The message is passed as an attachment NOT a multipart -- something has gone wrong but we can do this!
-
+        //TODO: this should be pulled out to the addToPartToDocumentWithSimpleHTMLParser method
         SimpleHTMLMailParser shtmlmp = new SimpleHTMLMailParser();
         InputStream is = part.getInputStream();
         Metadata md = new Metadata();
@@ -237,6 +252,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     row.put(MESSAGE_ID, mail.getMessageID());
     row.put(ID,mail.getMessageID());
     row.put(SUBJECT, mail.getSubject());
+    LOG.info("EXTRA: Subject: "+mail.getSubject());
 
     Date d = mail.getSentDate();
     if (d != null) {
