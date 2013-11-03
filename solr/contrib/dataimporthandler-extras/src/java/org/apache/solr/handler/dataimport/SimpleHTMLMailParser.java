@@ -54,7 +54,7 @@ public class SimpleHTMLMailParser
 					if(line.startsWith(boundary))
 						break;
 					//cut the last two chars off
-					String cutLine = ((line.length()>1 && line.charAt(line.length()-1) == '='))?line.substring(0,line.length()-2):line;
+					String cutLine = ((line.length()>1 && line.charAt(line.length()-1) == '='))?line.substring(0,line.length()-2):(line+"\n");
 					outStr.append(cutLine);
 				}
 				return outStr.toString();
